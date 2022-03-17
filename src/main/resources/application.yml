@@ -1,1 +1,30 @@
+server:
+  port: 8004
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://127.0.0.1:3306/slowcodev1?serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&useSSL=false
+    username: sbsst
+    password: sbs123414
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+    hibernate:
+      ddl-auto: create
+    #          ddl-auto: none
+    database-platform: org.hibernate.dialect.MariaDB53Dialect
+
+#전체 로그 레벨 설정(기본 info)
+logging.level.root: info
+
+#hello.springmvc 패키지와 그 하위 로그 레벨 설정
+logging.level.itseasy.mark: debug
