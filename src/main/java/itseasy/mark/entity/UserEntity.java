@@ -12,7 +12,7 @@ import static lombok.AccessLevel.PROTECTED;
 @Getter
 @Table(name = "users")
 @NoArgsConstructor(access = PROTECTED)
-public class User extends BaseTimeEntity {
+public class UserEntity extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "user_id", nullable = false)
@@ -22,7 +22,7 @@ public class User extends BaseTimeEntity {
     private String username;
 
     @Column(nullable = false)
-    private String password;
+    private String encryptedPwd;
 
     @Column(nullable = false)
     private String name;
@@ -31,8 +31,8 @@ public class User extends BaseTimeEntity {
         this.username = username;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setEncryptedPwd(String encryptedPwd) {
+        this.encryptedPwd = encryptedPwd;
     }
 
     public void setName(String name) {

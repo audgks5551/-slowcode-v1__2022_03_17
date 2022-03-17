@@ -12,7 +12,7 @@ import static lombok.AccessLevel.PROTECTED;
 @Getter
 @Table(name = "posts")
 @NoArgsConstructor(access = PROTECTED)
-public class Post extends BaseTimeEntity {
+public class PostEntity extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "post_id", nullable = false)
@@ -26,7 +26,7 @@ public class Post extends BaseTimeEntity {
 
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "user_id")
-    private User user;
+    private UserEntity user;
 
     public void setTitle(String title) {
         this.title = title;
@@ -36,7 +36,7 @@ public class Post extends BaseTimeEntity {
         this.content = content;
     }
 
-    public void setUser(User user) {
+    public void setUser(UserEntity user) {
         this.user = user;
     }
 }
