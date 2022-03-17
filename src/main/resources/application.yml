@@ -28,3 +28,10 @@ logging.level.root: info
 
 #hello.springmvc 패키지와 그 하위 로그 레벨 설정
 logging.level.itseasy.mark: debug
+
+# cors 설정
+cors:
+  allowed-origins: 'http://localhost:3000'
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: '*'
+  max-age: 3600
