@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
@@ -41,6 +40,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
                 .authorizeRequests()
                 .antMatchers("/api/v1/auth/signup").permitAll()
+                .antMatchers("/api/v1/auth/login").permitAll()
                 .anyRequest().authenticated();
     }
 

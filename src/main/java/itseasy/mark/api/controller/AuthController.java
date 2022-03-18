@@ -8,10 +8,16 @@ import itseasy.mark.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import static org.springframework.http.HttpStatus.CREATED;
 
@@ -22,6 +28,7 @@ public class AuthController {
 
     private final ModelMapper mapper;
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
 
     @PostMapping("/signup")
     public ResponseEntity<ResponseDTO> signup(@RequestBody RequestUser user) {
@@ -33,5 +40,23 @@ public class AuthController {
         return ResponseEntity.status(CREATED).body(
                 ResponseDTO.put(responseUser, null)
         );
+    }
+
+    @PostMapping("/login")
+    public String login(@RequestBody RequestUser user) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        user.getUsername(),
+                        user.getPassword()
+                )
+        );
+
+        System.out.println("authentication.getName() = " + authentication.getName());
+        System.out.println("authentication.getDetails() = " + authentication.getDetails());
+        System.out.println("authentication.getPrincipal() = " + authentication.getPrincipal());
+        System.out.println("authentication.getCredentials() = " + authentication.getCredentials());
+        System.out.println("authentication.getAuthorities() = " + authentication.getAuthorities());
+
+        return "ok";
     }
 }
