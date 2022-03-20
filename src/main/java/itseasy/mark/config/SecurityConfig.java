@@ -2,12 +2,15 @@ package itseasy.mark.config;
 
 import itseasy.mark.config.properties.AppProperties;
 import itseasy.mark.config.properties.CorsProperties;
+import itseasy.mark.oauth.exception.RestAuthenticationEntryPoint;
 import itseasy.mark.oauth.handler.OAuth2AuthenticationFailureHandler;
 import itseasy.mark.oauth.handler.OAuth2AuthenticationSuccessHandler;
 import itseasy.mark.oauth.repository.OAuth2AuthorizationRequestBasedOnCookieRepository;
 import itseasy.mark.oauth.service.CustomOAuth2UserService;
 import itseasy.mark.oauth.service.CustomUserDetailsService;
 import itseasy.mark.token.AuthTokenProvider;
+import itseasy.mark.token.TokenAccessDeniedHandler;
+import itseasy.mark.token.TokenAuthenticationFilter;
 import itseasy.mark.token.UserRefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
@@ -39,6 +43,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final AuthTokenProvider tokenProvider;
     private final AppProperties appProperties;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
+    private final TokenAccessDeniedHandler tokenAccessDeniedHandler;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -50,12 +55,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .formLogin().disable()
                 .httpBasic().disable()
                 .exceptionHandling() // 예외처리 기능 작동
-                .authenticationEntryPoint(null) // 인증처리 실패시 작동
-                .accessDeniedHandler(null) // 인가처리 실패시 작동
+                .authenticationEntryPoint(new RestAuthenticationEntryPoint()) // 인증처리 실패시 작동
+                .accessDeniedHandler(tokenAccessDeniedHandler) // 인가처리 실패시 작동
         .and()
                 .authorizeRequests()
                 .antMatchers("/api/v1/auth/signup").permitAll()
                 .antMatchers("/api/v1/auth/login").permitAll()
+                .antMatchers("/api/v1/auth/refresh").permitAll()
                 .anyRequest().authenticated()
         .and()
                 .oauth2Login()
@@ -71,6 +77,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
                 .successHandler(oAuth2AuthenticationSuccessHandler())
                 .failureHandler(oAuth2AuthenticationFailureHandler());
+
+        http.
+                addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
     /**
@@ -141,5 +150,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler() {
         return new OAuth2AuthenticationFailureHandler(oAuth2AuthorizationRequestBasedOnCookieRepository());
+    }
+
+    /**
+     * 토큰 필터 설정
+     */
+    @Bean
+    public TokenAuthenticationFilter tokenAuthenticationFilter() {
+        return new TokenAuthenticationFilter(tokenProvider);
     }
 }

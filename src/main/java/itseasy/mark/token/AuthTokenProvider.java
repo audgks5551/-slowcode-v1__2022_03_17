@@ -2,7 +2,6 @@ package itseasy.mark.token;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.security.Keys;
-import itseasy.mark.oauth.exception.TokenValidFailedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;

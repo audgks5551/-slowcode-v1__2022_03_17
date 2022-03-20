@@ -1,4 +1,4 @@
-package itseasy.mark.oauth.exception;
+package itseasy.mark.token;
 
 public class TokenValidFailedException extends RuntimeException {
 
