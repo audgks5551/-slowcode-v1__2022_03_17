@@ -23,6 +23,28 @@ spring:
     #          ddl-auto: none
     database-platform: org.hibernate.dialect.MariaDB53Dialect
 
+  security:
+    oauth2.client:
+      registration:
+        kakao:
+          clientId: c28e370aebcafcb01c15c950a719bd03
+          clientAuthenticationMethod: post
+          authorizationGrantType: authorization_code
+          redirectUri: http://localhost:8004/login/oauth2/code/kakao
+          scope:
+            - profile_nickname
+            - profile_image
+            - account_email
+          clientName: Kakao
+      # Provider 설정
+      provider:
+        kakao:
+          authorizationUri: https://kauth.kakao.com/oauth/authorize
+          tokenUri: https://kauth.kakao.com/oauth/token
+          userInfoUri: https://kapi.kakao.com/v2/user/me
+          userNameAttribute: id
+
+
 #전체 로그 레벨 설정(기본 info)
 logging.level.root: info
 
