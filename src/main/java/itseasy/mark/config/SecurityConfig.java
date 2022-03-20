@@ -2,12 +2,16 @@ package itseasy.mark.config;
 
 import itseasy.mark.config.properties.CorsProperties;
 import itseasy.mark.oauth.repository.OAuth2AuthorizationRequestBasedOnCookieRepository;
+import itseasy.mark.oauth.service.CustomOAuth2UserService;
+import itseasy.mark.oauth.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.CachingUserDetailsService;
 import org.springframework.security.config.BeanIds;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -25,6 +29,9 @@ import java.util.Arrays;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final CorsProperties corsProperties;
+    private final CustomOAuth2UserService oAuth2UserService;
+    private final CustomUserDetailsService userDetailsService;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -46,8 +53,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
                 .oauth2Login()
                 .authorizationEndpoint()
-                .baseUri("/oauth2/authorization");
-//                .authorizationRequestRepository(oAuth2AuthorizationRequestBasedOnCookieRepository());
+                .baseUri("/oauth2/authorization")
+                .authorizationRequestRepository(oAuth2AuthorizationRequestBasedOnCookieRepository())
+        .and()
+                .redirectionEndpoint()
+                .baseUri("/*/oauth2/code/*")
+        .and()
+                .userInfoEndpoint()
+                .userService(oAuth2UserService);
     }
 
     /**
@@ -72,13 +85,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return corsConfigSource;
     }
 
-    /**
-     * security 설정 시, 사용할 인코더 설정
-     */
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+
 
     /**
      * auth 매니저 설정
@@ -96,5 +103,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public OAuth2AuthorizationRequestBasedOnCookieRepository oAuth2AuthorizationRequestBasedOnCookieRepository() {
         return new OAuth2AuthorizationRequestBasedOnCookieRepository();
+    }
+
+    /**
+     * UserDetailsService 설정
+     */
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder);
     }
 }
