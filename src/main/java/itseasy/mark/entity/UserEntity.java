@@ -85,9 +85,9 @@ public class UserEntity extends BaseTimeEntity {
         this.encryptedPwd = encryptedPwd;
         this.providerType = providerType;
         this.roleType = roleType;
-        this.email = email;
+        this.email = email != null ? email : "NO_EMAIL";
         this.emailVerifiedYn = emailVerifiedYn;
-        this.profileImageUrl = profileImageUrl;
+        this.profileImageUrl = profileImageUrl != null ? profileImageUrl : "";
     }
 }
 
