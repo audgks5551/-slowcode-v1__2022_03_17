@@ -68,3 +68,11 @@ app:
       - http://localhost:3000/oauth/redirect
 
 jwt.secret: '8sknjlO3NPTBqo319DHLNqsQAfRJEdKsETOds'
+
+keycloak:
+  realm: realmtest
+  auth-server-url: http://localhost:8888/auth/
+  ssl-required: external
+  resource: clienttest
+  use-resource-role-mappings: true
+  bearer-only: true
