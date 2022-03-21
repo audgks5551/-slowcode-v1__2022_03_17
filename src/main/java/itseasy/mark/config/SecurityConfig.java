@@ -2,6 +2,7 @@ package itseasy.mark.config;
 
 import itseasy.mark.config.properties.AppProperties;
 import itseasy.mark.config.properties.CorsProperties;
+import itseasy.mark.oauth.entity.RoleType;
 import itseasy.mark.oauth.exception.RestAuthenticationEntryPoint;
 import itseasy.mark.oauth.handler.OAuth2AuthenticationFailureHandler;
 import itseasy.mark.oauth.handler.OAuth2AuthenticationSuccessHandler;

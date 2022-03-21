@@ -84,6 +84,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 roleType.getCode(),
                 new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
         );
+        log.info("엑세스토큰 유효시간 = {}", new Date(now.getTime() + appProperties.getAuth().getTokenExpiry()));
 
         long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
 

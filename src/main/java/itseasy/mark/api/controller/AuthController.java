@@ -16,6 +16,7 @@ import itseasy.mark.token.UserRefreshTokenRepository;
 import itseasy.mark.utils.CookieUtil;
 import itseasy.mark.utils.HeaderUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,7 @@ import java.util.Date;
 
 import static org.springframework.http.HttpStatus.CREATED;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -75,27 +77,40 @@ public class AuthController {
         String username = user.getUsername();
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
+        /**
+         * 액세스 토큰 생성
+         */
         Date now = new Date();
         AuthToken accessToken = tokenProvider.createAuthToken(
                 username,
                 ((UserPrincipal) authentication.getPrincipal()).getRoleType().getCode(),
                 new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
         );
+        log.info("엑세스 토큰 생성시 토큰발급 시간 = {}", new Date(now.getTime() + appProperties.getAuth().getTokenExpiry()));
 
+        /**
+         * 리프레시 토큰 생성
+         */
         long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
         AuthToken refreshToken = tokenProvider.createAuthToken(
                 appProperties.getAuth().getTokenSecret(),
                 new Date(now.getTime() + refreshTokenExpiry)
         );
 
-        // userId refresh token 으로 DB 확인
+        /**
+         * userId refresh token 으로 DB 확인
+         */
         UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUsername(username);
         if (userRefreshToken == null) {
-            // 없는 경우 새로 등록
+            /**
+             * 없는 경우 새로 등록
+             */
             userRefreshToken = new UserRefreshToken(username, refreshToken.getToken());
             userRefreshTokenRepository.saveAndFlush(userRefreshToken);
         } else {
-            // DB에 refresh 토큰 업데이트
+            /**
+             * DB에 refresh 토큰 업데이트
+             */
             userRefreshToken.setRefreshToken(refreshToken.getToken());
         }
 
@@ -110,58 +125,63 @@ public class AuthController {
 
     @GetMapping("/refresh")
     public ResponseEntity<ResponseDTO> refreshToken (HttpServletRequest request, HttpServletResponse response) {
-        // access token 확인
+
+        /**
+         * access token 찾기
+         */
         String accessToken = HeaderUtil.getAccessToken(request);
         AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
-        if (!authToken.validate()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ResponseDTO.put("", "")
-            );
-        }
 
-        // expired access token 인지 확인
         Claims claims = authToken.getExpiredTokenClaims();
         if (claims == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ResponseDTO.put("", "")
+                    ResponseDTO.put(null, "아직 만료되지 않은 액세스 토큰입니다.")
             );
         }
 
-        String userId = claims.getSubject();
+        String username = claims.getSubject();
         RoleType roleType = RoleType.of(claims.get("role", String.class));
 
-        // refresh token
+        /**
+         * refresh token 찾기
+         */
         String refreshToken = CookieUtil.getCookie(request, REFRESH_TOKEN)
                 .map(Cookie::getValue)
                 .orElse((null));
         AuthToken authRefreshToken = tokenProvider.convertAuthToken(refreshToken);
 
-        if (authRefreshToken.validate()) {
+        if (!authRefreshToken.validate()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ResponseDTO.put("", "")
+                    ResponseDTO.put(null, "알 수 없는 리프레시 토큰입니다")
             );
         }
 
-        // userId refresh token 으로 DB 확인
-        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUsernameAndRefreshToken(userId, refreshToken);
+        /**
+         * userId refresh token 으로 DB 확인
+         */
+        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUsernameAndRefreshToken(username, refreshToken);
         if (userRefreshToken == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ResponseDTO.put("", "")
+                    ResponseDTO.put(null, "리프레시 토큰이 존재하지 않습니다")
             );
         }
 
         Date now = new Date();
         AuthToken newAccessToken = tokenProvider.createAuthToken(
-                userId,
+                username,
                 roleType.getCode(),
                 new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
         );
 
         long validTime = authRefreshToken.getTokenClaims().getExpiration().getTime() - now.getTime();
 
-        // refresh 토큰 기간이 3일 이하로 남은 경우, refresh 토큰 갱신
+        /**
+         * refresh 토큰 기간이 3일 이하로 남은 경우, refresh 토큰 갱신
+         */
         if (validTime <= THREE_DAYS_MSEC) {
-            // refresh 토큰 설정
+            /**
+             * refresh 토큰 설정
+             */
             long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
 
             authRefreshToken = tokenProvider.createAuthToken(
@@ -169,7 +189,9 @@ public class AuthController {
                     new Date(now.getTime() + refreshTokenExpiry)
             );
 
-            // DB에 refresh 토큰 업데이트
+            /**
+             * DB에 refresh 토큰 업데이트
+             */
             userRefreshToken.setRefreshToken(authRefreshToken.getToken());
 
             int cookieMaxAge = (int) refreshTokenExpiry / 60;

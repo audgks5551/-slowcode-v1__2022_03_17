@@ -21,6 +21,9 @@ public class AuthTokenProvider {
     private final Key key;
     private static final String AUTHORITIES_KEY = "role";
 
+    /**
+     * KEY 생성
+     */
     public AuthTokenProvider(String secret) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
     }
