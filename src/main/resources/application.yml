@@ -70,9 +70,11 @@ app:
 jwt.secret: '8sknjlO3NPTBqo319DHLNqsQAfRJEdKsETOds'
 
 keycloak:
-  realm: realmtest
+  realm: Realmtest
   auth-server-url: http://localhost:8888/auth/
   ssl-required: external
-  resource: clienttest
+  resource: itseasy
   use-resource-role-mappings: true
   bearer-only: true
+
+clientSecret: fuHZFMvIqf5CvRw4gY0MSbfoZoS9GFHP

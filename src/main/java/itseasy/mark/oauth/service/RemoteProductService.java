@@ -1,7 +1,8 @@
-package itseasy.mark.service;
+package itseasy.mark.oauth.service;
 
 import lombok.RequiredArgsConstructor;
 import org.keycloak.adapters.springsecurity.client.KeycloakRestTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 

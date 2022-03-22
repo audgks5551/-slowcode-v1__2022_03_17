@@ -15,8 +15,10 @@ import itseasy.mark.token.UserRefreshToken;
 import itseasy.mark.token.UserRefreshTokenRepository;
 import itseasy.mark.utils.CookieUtil;
 import itseasy.mark.utils.HeaderUtil;
+import itseasy.mark.utils.KeycloakUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.keycloak.representations.AccessTokenResponse;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +48,7 @@ public class AuthController {
     private final AppProperties appProperties;
     private final AuthTokenProvider tokenProvider;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
+    private final KeycloakUtil keycloakUtil;
 
     private final static long THREE_DAYS_MSEC = 259200000;
     private final static String REFRESH_TOKEN = "refresh_token";
@@ -57,6 +60,11 @@ public class AuthController {
 
         ResponseUser responseUser = mapper.map(savedUserDto, ResponseUser.class); // UserDto -> ResponseUser
 
+        /**
+         * keycloak 유저 생성
+         */
+        keycloakUtil.registerUser(user.getUsername(), user.getPassword());
+
         return ResponseEntity.status(CREATED).body(
                 ResponseDTO.put(responseUser, null)
         );
@@ -67,25 +75,25 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response,
             @RequestBody RequestUser user) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        user.getUsername(),
-                        user.getPassword()
-                )
-        );
+//        Authentication authentication = authenticationManager.authenticate(
+//                new UsernamePasswordAuthenticationToken(
+//                        user.getUsername(),
+//                        user.getPassword()
+//                )
+//        );
 
         String username = user.getUsername();
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+//        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         /**
          * 액세스 토큰 생성
          */
         Date now = new Date();
-        AuthToken accessToken = tokenProvider.createAuthToken(
-                username,
-                ((UserPrincipal) authentication.getPrincipal()).getRoleType().getCode(),
-                new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
-        );
+//        AuthToken accessToken = tokenProvider.createAuthToken(
+//                username,
+//                ((UserPrincipal) authentication.getPrincipal()).getRoleType().getCode(),
+//                new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
+//        );
         log.info("엑세스 토큰 생성시 토큰발급 시간 = {}", new Date(now.getTime() + appProperties.getAuth().getTokenExpiry()));
 
         /**
@@ -115,11 +123,14 @@ public class AuthController {
         }
 
         int cookieMaxAge = (int) refreshTokenExpiry / 60;
-        CookieUtil.deleteCookie(request, response, REFRESH_TOKEN);
-        CookieUtil.addCookie(response, REFRESH_TOKEN, refreshToken.getToken(), cookieMaxAge);
+
+        AccessTokenResponse token = keycloakUtil.getToken(user.getUsername(), user.getPassword());
+
+//        CookieUtil.deleteCookie(request, response, REFRESH_TOKEN);
+//        CookieUtil.addCookie(response, REFRESH_TOKEN, token.getRefreshToken(), (int) token.getRefreshExpiresIn());
 
         return ResponseEntity.status(HttpStatus.OK).body(
-                ResponseDTO.put(accessToken.getToken(), null)
+                ResponseDTO.put(token, null)
         );
     }
 

@@ -8,6 +8,7 @@ import itseasy.mark.oauth.info.OAuth2UserInfoFactory;
 import itseasy.mark.oauth.repository.OAuth2AuthorizationRequestBasedOnCookieRepository;
 import itseasy.mark.token.*;
 import itseasy.mark.utils.CookieUtil;
+import itseasy.mark.utils.KeycloakUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -34,13 +35,12 @@ import static itseasy.mark.oauth.repository.OAuth2AuthorizationRequestBasedOnCoo
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+public class  OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final AuthTokenProvider tokenProvider;
     private final AppProperties appProperties;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final OAuth2AuthorizationRequestBasedOnCookieRepository authorizationRequestRepository;
-
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {

@@ -2,7 +2,6 @@ package itseasy.mark.config;
 
 import itseasy.mark.config.properties.AppProperties;
 import itseasy.mark.config.properties.CorsProperties;
-import itseasy.mark.oauth.exception.RestAuthenticationEntryPoint;
 import itseasy.mark.oauth.handler.OAuth2AuthenticationFailureHandler;
 import itseasy.mark.oauth.handler.OAuth2AuthenticationSuccessHandler;
 import itseasy.mark.oauth.repository.OAuth2AuthorizationRequestBasedOnCookieRepository;
@@ -16,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
 import org.keycloak.adapters.springsecurity.KeycloakSecurityComponents;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.client.KeycloakClientRequestFactory;
 import org.keycloak.adapters.springsecurity.client.KeycloakRestTemplate;
 import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
@@ -39,11 +39,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -54,9 +52,6 @@ import java.util.Arrays;
 @KeycloakConfiguration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
-@Configuration
-@EnableWebSecurity
-@ComponentScan(basePackageClasses = KeycloakSecurityComponents.class)
 public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
     private final CorsProperties corsProperties;
@@ -67,52 +62,39 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
     private final AppProperties appProperties;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final TokenAccessDeniedHandler tokenAccessDeniedHandler;
+    private final KeycloakClientRequestFactory keycloakClientRequestFactory;
 
-    /**
-     * Registers the KeycloakAuthenticationProvider with the authentication manager.
-     */
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(keycloakAuthenticationProvider());
-    }
 
-    /**
-     * Defines the session authentication strategy.
-     */
     @Bean
     @Override
     protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-        return new RegisterSessionAuthenticationStrategy(buildSessionRegistry());
-    }
-
-    @Bean
-    protected SessionRegistry buildSessionRegistry() {
-        return new SessionRegistryImpl();
+        return new NullAuthenticatedSessionStrategy();
     }
 
     @Autowired
-    public KeycloakClientRequestFactory keycloakClientRequestFactory;
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        KeycloakAuthenticationProvider keycloakAuthenticationProvider =
+                keycloakAuthenticationProvider();
 
-    @Bean
-    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public KeycloakRestTemplate keycloakRestTemplate() {
-        return new KeycloakRestTemplate(keycloakClientRequestFactory);
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+
+        auth.authenticationProvider(keycloakAuthenticationProvider);
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         super.configure(http);
         http
-                .cors().and().sessionManagement()
+                .cors().and().csrf().disable().sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
-                .csrf().disable()
-                .formLogin().disable()
-                .httpBasic().disable()
-                .exceptionHandling() // 예외처리 기능 작동
-                .authenticationEntryPoint(new RestAuthenticationEntryPoint()) // 인증처리 실패시 작동
-                .accessDeniedHandler(tokenAccessDeniedHandler) // 인가처리 실패시 작동
-        .and()
+
+//                .formLogin().disable()
+//                .httpBasic().disable()
+//                .exceptionHandling() // 예외처리 기능 작동
+//                .authenticationEntryPoint(new RestAuthenticationEntryPoint()) // 인증처리 실패시 작동
+//                .accessDeniedHandler(tokenAccessDeniedHandler) // 인가처리 실패시 작동
+//        .and()
                 .authorizeRequests()
                 .antMatchers("/api/v1/auth/signup").permitAll()
                 .antMatchers("/api/v1/auth/login").permitAll()
@@ -133,8 +115,8 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
                 .successHandler(oAuth2AuthenticationSuccessHandler())
                 .failureHandler(oAuth2AuthenticationFailureHandler());
 
-        http.
-                addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+//        http.
+//                addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
     /**
@@ -177,14 +159,19 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
         return new OAuth2AuthorizationRequestBasedOnCookieRepository();
     }
 
-    /**
-     * UserDetailsService 설정
-     */
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService)
-                .passwordEncoder(passwordEncoder);
+    @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public KeycloakRestTemplate keycloakRestTemplate() {
+        return new KeycloakRestTemplate(keycloakClientRequestFactory);
     }
+//    /**
+//     * UserDetailsService 설정
+//     */
+//    @Override
+//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        auth.userDetailsService(userDetailsService)
+//                .passwordEncoder(passwordEncoder);
+//    }
 
     /**
      * Oauth 인증 성공 핸들러
